@@ -51,3 +51,4 @@ werkzeug==3.0.2
 wheel==0.41.2
 wrapt==1.16.0
 zipp==3.17.0
+flask==3.0.3

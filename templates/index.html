@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Facial Emotion Recognition</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body>
+  <main class="container">
+    <h1>FACIAL EMOTION RECOGNITION</h1>
+    <p class="intro">
+      This project captures your facial expression in real time and classifies your emotion using
+      a trained deep learning model. The app combines <strong>Python</strong>, <strong>Flask</strong>,
+      <strong>OpenCV</strong>, <strong>TensorFlow/Keras</strong>, and browser webcam APIs to deliver a
+      simple user-facing FER experience.
+    </p>
+
+    <section class="camera-card">
+      <video id="video" autoplay playsinline></video>
+      <canvas id="canvas" hidden></canvas>
+      <div class="result-row">
+        <button id="startBtn">Start Camera</button>
+        <button id="analyzeBtn" disabled>Analyze Emotion</button>
+      </div>
+      <p id="status">Click <em>Start Camera</em> to begin.</p>
+      <p id="emotion" class="emotion-text"></p>
+    </section>
+
+    <section class="feedback-card">
+      <h2>Rate Your Experience</h2>
+      <div class="stars" id="stars" aria-label="5 star rating">
+        <span data-value="1">★</span>
+        <span data-value="2">★</span>
+        <span data-value="3">★</span>
+        <span data-value="4">★</span>
+        <span data-value="5">★</span>
+      </div>
+      <textarea id="comment" rows="4" placeholder="Share your feedback..."></textarea>
+      <button id="submitFeedback">Submit Feedback</button>
+      <p id="feedbackMsg"></p>
+    </section>
+  </main>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const startBtn = document.getElementById('startBtn');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const statusEl = document.getElementById('status');
+    const emotionEl = document.getElementById('emotion');
+
+    let stream;
+    let selectedRating = 0;
+
+    startBtn.addEventListener('click', async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        video.srcObject = stream;
+        analyzeBtn.disabled = false;
+        statusEl.textContent = 'Camera started. Click Analyze Emotion.';
+      } catch (err) {
+        statusEl.textContent = 'Unable to access camera. Please allow webcam permissions.';
+      }
+    });
+
+    analyzeBtn.addEventListener('click', async () => {
+      if (!stream) return;
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const imageData = canvas.toDataURL('image/jpeg');
+      statusEl.textContent = 'Analyzing...';
+
+      try {
+        const response = await fetch('/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: imageData })
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+          emotionEl.textContent = result.error || 'Prediction failed.';
+          statusEl.textContent = 'Try again.';
+          return;
+        }
+
+        const confidence = result.confidence !== undefined ? ` (${Math.round(result.confidence * 100)}% confidence)` : '';
+        emotionEl.textContent = `Detected Emotion: ${result.emotion}${confidence}`;
+        statusEl.textContent = 'Analysis complete.';
+      } catch (err) {
+        emotionEl.textContent = 'Network error while predicting emotion.';
+        statusEl.textContent = 'Please retry.';
+      }
+    });
+
+    const stars = document.querySelectorAll('#stars span');
+    stars.forEach(star => {
+      star.addEventListener('click', () => {
+        selectedRating = Number(star.dataset.value);
+        stars.forEach(s => s.classList.toggle('active', Number(s.dataset.value) <= selectedRating));
+      });
+    });
+
+    document.getElementById('submitFeedback').addEventListener('click', () => {
+      const comment = document.getElementById('comment').value.trim();
+      const msg = document.getElementById('feedbackMsg');
+
+      if (!selectedRating) {
+        msg.textContent = 'Please provide a star rating before submitting.';
+        return;
+      }
+
+      msg.textContent = `Thanks for your feedback! Rating: ${selectedRating}/5${comment ? ' | Comment received.' : ''}`;
+      document.getElementById('comment').value = '';
+    });
+  </script>
+</body>
+</html>
