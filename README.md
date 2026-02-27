@@ -224,3 +224,35 @@ Overall, the developed FER model holds significant promise for various real-worl
 
 
 
+
+## User-Facing Web Application
+
+A simple web interface is now available using Flask + HTML/CSS/JS.
+
+### Features
+- Bold project header: **FACIAL EMOTION RECOGNITION**
+- Live webcam capture in browser
+- Emotion prediction using the trained `model.h5`
+- Feedback section with 5-star rating and text comments
+
+### Run locally
+```bash
+pip install flask pillow
+python web_app.py
+```
+Then open: `http://localhost:5000`
+
+
+### macOS (Apple Silicon M1/M2) quick start
+Use the helper script to set up a virtual environment, install dependencies, and run the app:
+
+```bash
+chmod +x run_macos_m2.sh
+./run_macos_m2.sh
+```
+
+Then open `http://localhost:5000` in your browser.
+
+If camera access is blocked on macOS, allow it in:
+- **System Settings → Privacy & Security → Camera**
+- enable camera permission for your browser (Chrome/Safari/Edge)
